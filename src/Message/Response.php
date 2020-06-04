@@ -45,6 +45,69 @@ class Response extends AbstractResponse
     }
 
     /**
+     * @return bool
+     */
+    public function isRedirect()
+    {
+        if (isset($this->data['object']) && 'source' === $this->data['object']) {
+            if ($this->cardCan3DS() || ($this->isThreeDSecureSourcePending() && $this->getRedirectUrl() !== null)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if the ThreeDSecure source has status pending
+     *
+     * @return bool
+     */
+    protected function isThreeDSecureSourcePending()
+    {
+        if (isset($this->data['type']) && 'three_d_secure' === $this->data['type']) {
+            if (isset($this->data['status']) && 'pending' === $this->data['status']) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getRedirectUrl()
+    {
+        if (isset($this->data['object']) && 'source' === $this->data['object'] &&
+            isset($this->data['type']) && 'three_d_secure' === $this->data['type'] &&
+            !empty($this->data['redirect']['url'])
+        ) {
+            return $this->data['redirect']['url'];
+        }
+
+        return null;
+    }
+
+    /**
+     * Check if card requires 3DS
+     *
+     * @return bool
+     */
+    protected function cardCan3DS()
+    {
+        if (isset($this->data['type']) && 'card' === $this->data['type']) {
+            if (isset($this->data['card']['three_d_secure']) &&
+                in_array($this->data['card']['three_d_secure'], ['required', 'optional', 'recommended'], true)
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Is the payment need to 3D Secure authentication ?
      *
      * @return bool
